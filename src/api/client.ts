@@ -19,7 +19,8 @@ export type IndexEntry = {
   task_name: string;
   uploaded_filename: string;
   model: string;
-  status: "queued" | "running" | "done" | "failed";
+  status: "queued" | "running" | "pausing" | "paused" | "done" | "failed";
+  pause_requested?: boolean;
   created_at: string;
   started_at: string | null;
   finished_at: string | null;
@@ -74,6 +75,18 @@ export async function uploadZip(file: File): Promise<{ run_id: string }> {
 
 export async function deleteRun(runId: string): Promise<{ deleted: string }> {
   const r = await fetch(url(`/api/runs/${runId}`), { method: "DELETE", headers: headers() });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+export async function pauseRun(runId: string): Promise<{ run_id: string; status: string }> {
+  const r = await fetch(url(`/api/runs/${runId}/pause`), { method: "POST", headers: headers() });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+export async function resumeRun(runId: string): Promise<{ run_id: string; status: string }> {
+  const r = await fetch(url(`/api/runs/${runId}/resume`), { method: "POST", headers: headers() });
   if (!r.ok) throw new Error(await r.text());
   return r.json();
 }

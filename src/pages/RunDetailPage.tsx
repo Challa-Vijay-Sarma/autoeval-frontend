@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { deleteRun, downloadUrl, Episode, getRun } from "../api/client";
+import { deleteRun, downloadUrl, Episode, getRun, pauseRun, resumeRun } from "../api/client";
 import StatusBadge from "../components/StatusBadge";
 
 const GOLDEN_COLS = [
@@ -43,7 +43,9 @@ export default function RunDetailPage() {
     refetchInterval: (query) => {
       const data: any = query.state.data;
       const status = data?.status;
-      return status === "running" || status === "queued" ? 3000 : false;
+      // Keep polling while the run is in motion OR transitioning.
+      const live = new Set(["running", "queued", "pausing"]);
+      return live.has(status) ? 3000 : false;
     },
   });
 
@@ -52,6 +54,22 @@ export default function RunDetailPage() {
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["runs"] });
       navigate("/runs");
+    },
+  });
+
+  const pause = useMutation({
+    mutationFn: pauseRun,
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["run", runId] });
+      await qc.invalidateQueries({ queryKey: ["runs"] });
+    },
+  });
+
+  const resume = useMutation({
+    mutationFn: resumeRun,
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["run", runId] });
+      await qc.invalidateQueries({ queryKey: ["runs"] });
     },
   });
 
@@ -91,6 +109,26 @@ export default function RunDetailPage() {
             >
               failure_summary.xlsx
             </a>
+            {(m.status === "running" || m.status === "queued") ? (
+              <button
+                type="button"
+                disabled={pause.isPending}
+                className="text-xs rounded border border-amber-300 px-3 py-1.5 text-amber-800 hover:bg-amber-50 disabled:opacity-50"
+                onClick={() => pause.mutate(m.run_id)}
+              >
+                {pause.isPending ? "Pausing…" : "Pause"}
+              </button>
+            ) : null}
+            {(m.status === "paused" || m.status === "pausing") ? (
+              <button
+                type="button"
+                disabled={resume.isPending}
+                className="text-xs rounded border border-blue-300 px-3 py-1.5 text-blue-800 hover:bg-blue-50 disabled:opacity-50"
+                onClick={() => resume.mutate(m.run_id)}
+              >
+                {resume.isPending ? "Resuming…" : "Resume"}
+              </button>
+            ) : null}
             <button
               type="button"
               disabled={del.isPending}
@@ -112,6 +150,12 @@ export default function RunDetailPage() {
         </div>
         {del.isError ? (
           <p className="mt-3 text-sm text-rose-700">{(del.error as Error).message}</p>
+        ) : null}
+        {pause.isError ? (
+          <p className="mt-3 text-sm text-rose-700">{(pause.error as Error).message}</p>
+        ) : null}
+        {resume.isError ? (
+          <p className="mt-3 text-sm text-rose-700">{(resume.error as Error).message}</p>
         ) : null}
       </div>
 

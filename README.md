@@ -87,11 +87,14 @@ The Vite dev server proxies `/api/*` requests to `http://localhost:8000` (see [`
 ### `/runs/:id` — Run detail
 - Header with task name, status badge, model, counts, error (if any)
 - Download buttons for `golden_summary.csv` and `failure_summary.xlsx`
-- Delete-run button (returns to `/runs` on success)
+- **Pause / Resume buttons** (visible only in the matching state):
+  - **Pause** shows when status is `running` or `queued`. Tells the backend to stop scheduling new episodes; in-flight calls finish, then the run lands in `paused`.
+  - **Resume** shows when status is `paused` or `pausing`. Tells the backend to re-schedule the worker and pick up remaining `pending` episodes.
+- **Delete-run** button (returns to `/runs` on success)
 - Two tabs:
   - **Golden Episodes** — columns include `GT Class(AI)`, `GT Justification(AI)`, `Success Criteria (AI)`, and human-review placeholders
   - **Failure Episodes** — columns include `GT Class(AI)`, `GT Justification(AI)`, `failure_type`, `reason`, `root_cause`, `fix`
-- While the run status is `queued` or `running`, the page auto-refetches every 3 s
+- While the run status is `queued`, `running`, or `pausing`, the page auto-refetches every 3 s. `paused`, `done`, and `failed` stop the polling.
 
 ---
 
@@ -100,8 +103,26 @@ The Vite dev server proxies `/api/*` requests to `http://localhost:8000` (see [`
 [`src/api/client.ts`](src/api/client.ts) is a small typed `fetch` wrapper:
 
 ```ts
-import { listRuns, getRun, uploadZip, deleteRun, downloadUrl } from "./api/client";
+import {
+  listRuns, getRun, uploadZip,
+  pauseRun, resumeRun, deleteRun,
+  downloadUrl,
+} from "./api/client";
 ```
+
+Functions:
+
+| Export | Method + path |
+|---|---|
+| `listRuns()` | `GET /api/runs` |
+| `getRun(id)` | `GET /api/runs/{id}` |
+| `uploadZip(file)` | `POST /api/runs` (multipart) |
+| `pauseRun(id)` | `POST /api/runs/{id}/pause` |
+| `resumeRun(id)` | `POST /api/runs/{id}/resume` |
+| `deleteRun(id)` | `DELETE /api/runs/{id}` |
+| `downloadUrl(id, kind)` | builds the CSV/XLSX URL (uses Bearer if needed) |
+
+Behaviour:
 
 - Reads `VITE_API_BASE_URL` once and prepends it to every path.
 - Reads `VITE_API_TOKEN` once and attaches it as a Bearer header when present.
@@ -171,12 +192,28 @@ For end-to-end CI builds (one push → both services deployed), see [`../cloudbu
 
 ---
 
+## Status badges
+
+The `StatusBadge` component renders a coloured pill for every value the backend can return:
+
+| Status | Colour | When |
+|---|---|---|
+| `queued` / `pending` | slate | Run / episode not started yet |
+| `running` | blue | Worker actively processing |
+| `pausing` | amber | Pause requested; in-flight calls finishing |
+| `paused` | dark slate | No work in flight; resume to continue |
+| `done` | emerald | Successful completion |
+| `failed` / `error` | rose | Catastrophic failure |
+
+---
+
 ## Common gotchas
 
 - **CORS error in browser console** — backend's `CORS_ALLOW_ORIGINS` doesn't include the frontend's origin. Update env on the backend Cloud Run service.
 - **`401 invalid or missing bearer token`** — backend's `API_TOKEN` is set but `VITE_API_TOKEN` isn't (or doesn't match). Either clear the backend token or rebuild the frontend with the right value.
 - **Stale UI after `.env` edit** — Vite reads env only at startup. Restart `npm run dev`. For production, you must rebuild.
 - **`Network request failed`** — backend isn't running, or `VITE_API_BASE_URL` points somewhere wrong.
+- **Pause button doesn't immediately flip status to `paused`** — expected. In-flight OpenAI calls have to finish first; the status sits at `pausing` until they do (up to ~60 s for `gpt-5.1`).
 
 ---
 
