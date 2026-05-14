@@ -68,7 +68,7 @@ npm install
 npm run dev                # http://localhost:5173
 ```
 
-The Vite dev server proxies `/api/*` requests to `http://localhost:8000` (see [`vite.config.ts`](vite.config.ts)), so the SPA and the API feel like one origin even though they're two processes. Backend must be running separately — see [`../backend/README.md`](../backend/README.md).
+The Vite dev server proxies `/api/*` requests to `http://localhost:8000` (see [`vite.config.ts`](vite.config.ts)), so the SPA and the API feel like one origin even though they're two processes. Start the API first — for localhost, **`docker compose up --build -d`** from [`../backend/`](../backend/) is the default workflow; see [`../backend/README.md`](../backend/README.md) → *Local dev*.
 
 ---
 

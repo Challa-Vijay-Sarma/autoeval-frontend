@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { deleteRun, downloadUrl, Episode, getRun, pauseRun, resumeRun } from "../api/client";
+import { deleteRun, downloadUrl, Episode, episodeExplorerUrl, explorersZipUrl, getRun, pauseRun, resumeRun } from "../api/client";
 import StatusBadge from "../components/StatusBadge";
 
 const GOLDEN_COLS = [
@@ -109,6 +109,13 @@ export default function RunDetailPage() {
             >
               failure_summary.xlsx
             </a>
+            <a
+              href={explorersZipUrl(m.run_id)}
+              className="text-xs rounded border px-3 py-1.5 hover:bg-slate-50"
+              title="Zip of every per-episode explorer.html"
+            >
+              explorers.zip
+            </a>
             {(m.status === "running" || m.status === "queued") ? (
               <button
                 type="button"
@@ -184,9 +191,9 @@ export default function RunDetailPage() {
         </div>
         <div className="p-4 overflow-x-auto">
           {tab === "golden" ? (
-            <EpisodeTable eps={goldenEps} cols={GOLDEN_COLS} />
+            <EpisodeTable runId={m.run_id} eps={goldenEps} cols={GOLDEN_COLS} />
           ) : (
-            <EpisodeTable eps={failureEps} cols={FAILURE_COLS} />
+            <EpisodeTable runId={m.run_id} eps={failureEps} cols={FAILURE_COLS} />
           )}
         </div>
       </div>
@@ -194,7 +201,7 @@ export default function RunDetailPage() {
   );
 }
 
-function EpisodeTable({ eps, cols }: { eps: Episode[]; cols: string[] }) {
+function EpisodeTable({ runId, eps, cols }: { runId: string; eps: Episode[]; cols: string[] }) {
   if (eps.length === 0) return <div className="text-sm text-slate-500">No episodes.</div>;
   return (
     <table className="min-w-full text-xs">
@@ -202,6 +209,7 @@ function EpisodeTable({ eps, cols }: { eps: Episode[]; cols: string[] }) {
         <tr>
           <th className="text-left py-2 px-2">Episode</th>
           <th className="text-left py-2 px-2">Status</th>
+          <th className="text-left py-2 px-2">Explorer</th>
           {cols.map((c) => (
             <th key={c} className="text-left py-2 px-2 whitespace-nowrap">
               {c}
@@ -218,6 +226,20 @@ function EpisodeTable({ eps, cols }: { eps: Episode[]; cols: string[] }) {
               {ep.error_message ? (
                 <div className="text-rose-700 mt-1">{ep.error_message}</div>
               ) : null}
+            </td>
+            <td className="py-2 px-2 whitespace-nowrap">
+              {ep.has_explorer ? (
+                <a
+                  href={episodeExplorerUrl(runId, ep.episode_id)}
+                  target="_blank"
+                  rel="noopener"
+                  className="text-blue-700 hover:underline"
+                >
+                  open
+                </a>
+              ) : (
+                <span className="text-slate-400">—</span>
+              )}
             </td>
             {cols.map((c) => (
               <td key={c} className="py-2 px-2 max-w-[16rem] truncate" title={String(ep.summary?.[c] ?? "")}>

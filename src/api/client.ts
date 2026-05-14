@@ -40,6 +40,7 @@ export type Episode = {
   summary: Record<string, any>;
   started_at: string | null;
   finished_at: string | null;
+  has_explorer: boolean;
 };
 
 export type RunManifest = IndexEntry & {
@@ -96,4 +97,12 @@ export function downloadUrl(runId: string, kind: "golden" | "failure"): string {
     ? `/api/runs/${runId}/golden_summary.csv`
     : `/api/runs/${runId}/failure_summary.xlsx`;
   return url(path);
+}
+
+export function episodeExplorerUrl(runId: string, episodeId: string): string {
+  return url(`/api/runs/${runId}/episodes/${encodeURIComponent(episodeId)}/explorer.html`);
+}
+
+export function explorersZipUrl(runId: string): string {
+  return url(`/api/runs/${runId}/explorers.zip`);
 }
