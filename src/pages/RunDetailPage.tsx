@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { deleteRun, downloadUrl, Episode, episodeExplorerUrl, explorersZipUrl, getRun, pauseRun, resumeRun } from "../api/client";
+import { deleteRun, Episode, episodeExplorerUrl, getRun, pauseRun, resultsZipUrl, resumeRun } from "../api/client";
 import StatusBadge from "../components/StatusBadge";
 
 const GOLDEN_COLS = [
@@ -98,23 +98,11 @@ export default function RunDetailPage() {
           </div>
           <div className="flex flex-wrap items-center gap-2 justify-end">
             <a
-              href={downloadUrl(m.run_id, "golden")}
-              className="text-xs rounded border px-3 py-1.5 hover:bg-slate-50"
+              href={resultsZipUrl(m.run_id)}
+              className="text-xs rounded border border-slate-700 bg-slate-900 text-white px-3 py-1.5 hover:bg-slate-800"
+              title="Single zip: golden_summary.csv + failure_summary.csv + every per-episode explorer.html. The 'Explorer HTML' column in each spreadsheet maps directly to a file inside this zip."
             >
-              golden_summary.csv
-            </a>
-            <a
-              href={downloadUrl(m.run_id, "failure")}
-              className="text-xs rounded border px-3 py-1.5 hover:bg-slate-50"
-            >
-              failure_summary.xlsx
-            </a>
-            <a
-              href={explorersZipUrl(m.run_id)}
-              className="text-xs rounded border px-3 py-1.5 hover:bg-slate-50"
-              title="Zip of every per-episode explorer.html"
-            >
-              explorers.zip
+              Download results (zip)
             </a>
             {(m.status === "running" || m.status === "queued") ? (
               <button

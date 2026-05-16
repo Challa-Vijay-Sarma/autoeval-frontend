@@ -93,9 +93,8 @@ export async function resumeRun(runId: string): Promise<{ run_id: string; status
 }
 
 export function downloadUrl(runId: string, kind: "golden" | "failure"): string {
-  const path = kind === "golden"
-    ? `/api/runs/${runId}/golden_summary.csv`
-    : `/api/runs/${runId}/failure_summary.xlsx`;
+  // Both summaries are CSV now (failure was XLSX historically).
+  const path = `/api/runs/${runId}/${kind}_summary.csv`;
   return url(path);
 }
 
@@ -103,6 +102,6 @@ export function episodeExplorerUrl(runId: string, episodeId: string): string {
   return url(`/api/runs/${runId}/episodes/${encodeURIComponent(episodeId)}/explorer.html`);
 }
 
-export function explorersZipUrl(runId: string): string {
-  return url(`/api/runs/${runId}/explorers.zip`);
+export function resultsZipUrl(runId: string): string {
+  return url(`/api/runs/${runId}/results.zip`);
 }
